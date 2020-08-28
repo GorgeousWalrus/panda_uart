@@ -109,6 +109,7 @@ begin
         tx_data = (uart_regs_q[`TX_DATA] >> (8*tx_cnt));
         /* verilator lint_on WIDTH */
         if(tx_done) begin
+            tx_enable = 1'b0;
             tx_incr_cnt = 1'b1;
             if(tx_cnt == 2'b11) begin
                 tx_rst_cnt = 1'b1;
