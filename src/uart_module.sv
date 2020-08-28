@@ -33,7 +33,7 @@
 
 module uart_module #(
 )(
-    apb_bus_t           apb_bus,
+    apb_bus_t.slave     apb_bus,
     input logic         rx_i,
     output logic        tx_o
 );
@@ -73,6 +73,7 @@ begin
     tx_enable   = 1'b0;
     tx_incr_cnt = 1'b0;
     tx_rst_cnt  = 1'b0;
+    tx_data     = 'b0;
 
     rx_incr_cnt = 1'b0;
     rx_rst_cnt  = 1'b0;
