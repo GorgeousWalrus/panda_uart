@@ -18,6 +18,7 @@
 module uart_rx (
     input logic             clk,
     input logic             rstn_i,
+    input logic             rx_enable_i,
     input logic [31:0]      clk_div_i,
     output logic [7:0]      rx_data_o,
     output logic            rx_valid_o,
@@ -54,34 +55,36 @@ begin
     rx_err_n = rx_err_q;
     NS = CS;
 
-    case(CS)
-        IDLE: begin
-            rx_err_n = 1'b0;
-            rst_cnt = 1'b1;
-            if(!rx_i) begin
-                NS = RX;
+    if(rx_enable_i) begin
+        case(CS)
+            IDLE: begin
+                rx_err_n = 1'b0;
+                rst_cnt = 1'b1;
+                if(!rx_i) begin
+                    NS = RX;
+                end
             end
-        end
 
-        RX: begin
-            data_n[rx_cnt] = rx_i;
-            incr_cnt = 1'b1;
-            if(rx_cnt == 'd7)
-                NS = PARITY;
-        end
+            RX: begin
+                data_n[rx_cnt] = rx_i;
+                incr_cnt = 1'b1;
+                if(rx_cnt == 'd7)
+                    NS = PARITY;
+            end
 
-        PARITY: begin
-            rx_err_n = 1'b0;
-            if(parity != rx_i)
-                rx_err_n = 1'b1;
-            NS = STOP;
-        end
+            PARITY: begin
+                rx_err_n = 1'b0;
+                if(parity != rx_i)
+                    rx_err_n = 1'b1;
+                NS = STOP;
+            end
 
-        STOP: begin
-            rx_valid_n = 1'b1;
-            NS = IDLE;
-        end
-    endcase
+            STOP: begin
+                rx_valid_n = 1'b1;
+                NS = IDLE;
+            end
+        endcase
+    end
 end
 
 always_ff @(posedge clk, negedge rstn_i)
@@ -116,11 +119,16 @@ begin
             // Only send rx_valid for one cycle
             rx_valid_q <= 1'b0;
             
-            clk_cnt <= clk_cnt + 1;
-            // Synchronize
-            if(CS == IDLE && !rx_i) begin
+            if(rx_enable_i) begin
+                clk_cnt <= clk_cnt + 1;
+                // Synchronize
+                if(CS == IDLE && !rx_i) begin
+                    clk_cnt <= 'b0;
+                    CS <= RX;
+                end
+            end else begin
+                CS <= IDLE;
                 clk_cnt <= 'b0;
-                CS <= RX;
             end
         end //~if(clk_cnt == clk_div_i)
     end

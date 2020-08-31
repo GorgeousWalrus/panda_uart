@@ -52,34 +52,36 @@ begin
     rst_cnt = 1'b0;
     tx_done_n = 1'b0;
 
-    case(CS)
-        IDLE: begin
-            rst_cnt = 1'b1;
-            tx = 1'b1;
-            if(tx_valid_i) begin
-                tx = 1'b0;
-                NS = TX;
+    if(tx_valid_i) begin
+        case(CS)
+            IDLE: begin
+                rst_cnt = 1'b1;
+                tx = 1'b1;
+                if(tx_valid_i) begin
+                    tx = 1'b0;
+                    NS = TX;
+                end
             end
-        end
 
-        TX: begin
-            tx = tx_data_i[tx_cnt];
-            incr_cnt = 1'b1;
-            if(tx_cnt == 'd7)
-                NS = PARITY;
-        end
+            TX: begin
+                tx = tx_data_i[tx_cnt];
+                incr_cnt = 1'b1;
+                if(tx_cnt == 'd7)
+                    NS = PARITY;
+            end
 
-        PARITY: begin
-            tx = parity;
-            NS = STOP;
-        end
+            PARITY: begin
+                tx = parity;
+                NS = STOP;
+            end
 
-        STOP: begin
-            tx_done_n = 1'b1;
-            tx = 1'b1;
-            NS = IDLE;
-        end
-    endcase
+            STOP: begin
+                tx_done_n = 1'b1;
+                tx = 1'b1;
+                NS = IDLE;
+            end
+        endcase
+    end
 end
 
 always_ff @(posedge clk, negedge rstn_i)
