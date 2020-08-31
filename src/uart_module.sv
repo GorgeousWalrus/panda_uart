@@ -98,6 +98,7 @@ begin
     tx_enable   = 1'b0;
     tx_incr_cnt = 1'b0;
     tx_rst_cnt  = 1'b0;
+    tx_data     = 'b0;
 
     // tx fifo
     tx_fifo_read  = 1'b0;
