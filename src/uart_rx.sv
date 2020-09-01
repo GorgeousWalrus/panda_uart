@@ -31,6 +31,9 @@ enum logic [1:0] {IDLE, RX, PARITY, STOP} CS, NS;
 // For baud clk
 logic [31:0]    clk_cnt;
 
+// double flop rx
+logic           rx, rx_buf;
+
 // rx data
 logic [7:0]     data_n, data_q;
 logic           rx_err_n, rx_err_q;
@@ -60,13 +63,13 @@ begin
             IDLE: begin
                 rx_err_n = 1'b0;
                 rst_cnt = 1'b1;
-                if(!rx_i) begin
+                if(!rx) begin
                     NS = RX;
                 end
             end
 
             RX: begin
-                data_n[rx_cnt] = rx_i;
+                data_n[rx_cnt] = rx;
                 incr_cnt = 1'b1;
                 if(rx_cnt == 'd7)
                     NS = PARITY;
@@ -74,7 +77,7 @@ begin
 
             PARITY: begin
                 rx_err_n = 1'b0;
-                if(parity != rx_i)
+                if(parity != rx)
                     rx_err_n = 1'b1;
                 NS = STOP;
             end
@@ -90,21 +93,27 @@ end
 always_ff @(posedge clk, negedge rstn_i)
 begin
     if(!rstn_i) begin
-        CS <= IDLE;
-        data_q <= 'b0;
+        CS       <= IDLE;
+        data_q   <= 'b0;
         rx_err_q <= 'b0;
-        rx_cnt <= 'b0;
-        clk_cnt <= 'b0;
-        parity <= 'b0;
+        rx_cnt   <= 'b0;
+        clk_cnt  <= 'b0;
+        parity   <= 'b0;
+        rx_buf   <= 1'b1;
+        rx       <= 1'b1;
     end else begin
         rx_err_q <= rx_err_n;
 
+        // Double flop rx to mitigate metastability
+        rx_buf   <= rx_i;
+        rx       <= rx_buf;
+
         // Count the clock to get the baudrate
         if(clk_cnt == clk_div_i) begin // baud tick
-            data_q <= data_n;
+            data_q     <= data_n;
             rx_valid_q <= rx_valid_n;
-            clk_cnt <= 'b0;
-            CS <= NS;
+            clk_cnt    <= 'b0;
+            CS         <= NS;
 
             if(rst_cnt) begin
                 // Reset counter and parity
@@ -122,13 +131,13 @@ begin
             if(rx_enable_i) begin
                 clk_cnt <= clk_cnt + 1;
                 // Synchronize
-                if(CS == IDLE && !rx_i) begin
+                if(CS == IDLE && !rx) begin
                     clk_cnt <= 'b0;
-                    CS <= RX;
+                    CS      <= RX;
                 end
             end else begin
-                CS <= IDLE;
                 clk_cnt <= 'b0;
+                CS      <= IDLE;
             end
         end //~if(clk_cnt == clk_div_i)
     end
