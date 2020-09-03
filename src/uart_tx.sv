@@ -22,6 +22,7 @@ module uart_tx(
     input logic [7:0]       tx_data_i,
     input logic             tx_valid_i,
     output logic            tx_done_o,
+    input logic             parity_en_i,
     output logic            tx_o
 );
 
@@ -67,7 +68,10 @@ begin
                 tx = tx_data_i[tx_cnt];
                 incr_cnt = 1'b1;
                 if(tx_cnt == 'd7)
-                    NS = PARITY;
+                    if(parity_en_i)
+                        NS = PARITY;
+                    else
+                        NS = STOP;
             end
 
             PARITY: begin

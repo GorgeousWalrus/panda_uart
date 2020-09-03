@@ -23,10 +23,11 @@ module uart_rx (
     output logic [7:0]      rx_data_o,
     output logic            rx_valid_o,
     output logic            rx_err_o,
+    input logic             parity_en_i,
     input logic             rx_i
 );
 
-enum logic [1:0] {IDLE, RX, PARITY, STOP} CS, NS;
+enum logic [2:0] {IDLE, START, RX, PARITY, STOP} CS, NS;
 
 // For baud clk
 logic [31:0]    clk_cnt;
@@ -47,7 +48,7 @@ logic           rst_cnt;
 
 assign rx_valid_o = rx_valid_q;
 assign rx_data_o  = data_q;
-assign rx_err_o   = rx_err_q;
+assign rx_err_o   = (parity_en_i) ? rx_err_q : 1'b0;
 
 always_comb
 begin
@@ -64,15 +65,23 @@ begin
                 rx_err_n = 1'b0;
                 rst_cnt = 1'b1;
                 if(!rx) begin
-                    NS = RX;
+                    NS = START;
                 end
+            end
+
+            START: begin
+                rst_cnt = 1'b1;
+                NS = RX;
             end
 
             RX: begin
                 data_n[rx_cnt] = rx;
                 incr_cnt = 1'b1;
                 if(rx_cnt == 'd7)
-                    NS = PARITY;
+                    if(parity_en_i)
+                        NS = PARITY;
+                    else
+                        NS = STOP;
             end
 
             PARITY: begin
@@ -86,6 +95,8 @@ begin
                 rx_valid_n = 1'b1;
                 NS = IDLE;
             end
+
+            default: begin end
         endcase
     end
 end
@@ -136,8 +147,8 @@ begin
                     CS      <= RX;
                 end
             end else begin
-                clk_cnt <= 'b0;
-                CS      <= IDLE;
+                clk_cnt <= clk_div_i >> 1;
+                CS      <= START;
             end
         end //~if(clk_cnt == clk_div_i)
     end

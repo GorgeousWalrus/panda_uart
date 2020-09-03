@@ -33,6 +33,7 @@ localparam STATUS = 4;
 // control bits
 localparam TX_EN = 0;
 localparam RX_EN = 1;
+localparam PARITY_EN = 2;
 
 // Status bits
 localparam TX_EMPTY = 0;
@@ -217,6 +218,7 @@ begin
 end
 
 /* verilator lint_off PINMISSING */
+/* verilator lint_off PINCONNECTEMPTY */
 fifo #(
     .WIDTH      ( 32        ),
     .DEPTH      ( 8         ),
@@ -229,7 +231,9 @@ fifo #(
     .re_i       ( rx_fifo_read      ),
     .dout_o     ( tx_32data_read    ),
     .E_o        ( rx_empty          ),
-    .F_o        ( rx_full           )
+    .F_o        ( rx_full           ),
+    .AE_o       (),
+    .AF_o       ()
 );
 
 fifo #(
@@ -244,8 +248,11 @@ fifo #(
     .re_i       ( tx_fifo_read          ),
     .dout_o     ( tx_32data             ),
     .E_o        ( tx_empty              ),
-    .F_o        ( tx_full               )
+    .F_o        ( tx_full               ),
+    .AE_o       (),
+    .AF_o       ()
 );
+/* verilator lint_on PINCONNECTEMPTY */
 /* verilator lint_on PINMISSING */
 
 uart_tx tx_mod_i (
@@ -255,6 +262,7 @@ uart_tx tx_mod_i (
     .tx_data_i  ( tx_data                   ),
     .tx_valid_i ( tx_enable                 ),
     .tx_done_o  ( tx_done                   ),
+    .parity_en_i( uart_regs_q[CTRL][PARITY_EN]),
     .tx_o       ( tx_o                      )
 );
 
@@ -266,6 +274,7 @@ uart_rx rx_mod_i (
     .rx_data_o  ( rx_data                   ),
     .rx_valid_o ( rx_valid                  ),
     .rx_err_o   ( rx_parity_err             ),
+    .parity_en_i( uart_regs_q[CTRL][PARITY_EN]),
     .rx_i       ( rx_i                      )
 );
 
