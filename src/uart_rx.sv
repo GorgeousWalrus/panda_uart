@@ -64,9 +64,8 @@ begin
             IDLE: begin
                 rx_err_n = 1'b0;
                 rst_cnt = 1'b1;
-                if(!rx) begin
-                    NS = START;
-                end
+                // Leaving IDLE is done in synchronous part, as well as
+                // synchronizing with the baudrate
             end
 
             START: begin
@@ -143,12 +142,12 @@ begin
                 clk_cnt <= clk_cnt + 1;
                 // Synchronize
                 if(CS == IDLE && !rx) begin
-                    clk_cnt <= 'b0;
-                    CS      <= RX;
+                    clk_cnt <= clk_div_i >> 1;
+                    CS      <= START;
                 end
             end else begin
-                clk_cnt <= clk_div_i >> 1;
-                CS      <= START;
+                clk_cnt <= 0;
+                CS      <= IDLE;
             end
         end //~if(clk_cnt == clk_div_i)
     end

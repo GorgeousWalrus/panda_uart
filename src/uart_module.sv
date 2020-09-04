@@ -101,7 +101,7 @@ begin
     rx_fifo_write_n = 1'b0;
     uart_regs_n[STATUS][RX_EMPTY] = rx_empty;
     uart_regs_n[STATUS][RX_FULL] = rx_full;
-    uart_regs_n[RX_DATA] = rx_data_read;
+    uart_regs_n[RX_DATA] = {24'b0, rx_data_read};
 
     // APB slave
     if(apb_bus.PSEL && apb_bus.PENABLE) begin
@@ -137,9 +137,6 @@ begin
             tx_enable = 1'b0;
             // notify fifo that we processed the data
             tx_fifo_read = 1'b1;
-            // If this was the last word in txfifo, disable uart
-            if(uart_regs_q[STATUS][TX_EMPTY])
-                uart_regs_n[CTRL][TX_EN] = 1'b0;
         end
     end
 
